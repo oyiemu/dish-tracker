@@ -6,7 +6,7 @@
     --color-3: #4facfe;
     --color-4: #43e97b;
 
-    /* UI Colors */
+    /* UI Colors - Dark Mode (default) */
     --bg-primary: #0f0f1a;
     --bg-secondary: #1a1a2e;
     --bg-card: rgba(255, 255, 255, 0.05);
@@ -47,6 +47,29 @@
 
     /* Typography */
     --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Light Mode - Soft cream/off-white colors, easier on eyes */
+.light-mode {
+    --bg-primary: #f5f5f0;
+    --bg-secondary: #eeeee8;
+    --bg-card: rgba(0, 0, 0, 0.03);
+    --bg-card-hover: rgba(0, 0, 0, 0.06);
+
+    --text-primary: #1a1a2e;
+    --text-secondary: rgba(26, 26, 46, 0.7);
+    --text-muted: rgba(26, 26, 46, 0.5);
+
+    --border-color: rgba(0, 0, 0, 0.1);
+    --success: #2ecc71;
+    --danger: #e74c3c;
+
+    --gradient-card: linear-gradient(135deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.04) 100%);
+
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+    --shadow-glow: 0 0 40px rgba(102, 126, 234, 0.15);
 }
 
 /* ==================== Reset & Base ==================== */

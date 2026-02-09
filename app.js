@@ -17,7 +17,8 @@ const LOCAL_KEYS = {
     MY_IDENTITY: 'dishDuty_myIdentity',
     MY_INDEX: 'dishDuty_myIndex',
     NOTIFICATIONS_ENABLED: 'dishDuty_notificationsEnabled',
-    NOTIFICATION_TIME: 'dishDuty_notificationTime'
+    NOTIFICATION_TIME: 'dishDuty_notificationTime',
+    THEME: 'dishDuty_theme'
 };
 
 const PERSON_COLORS = ['#667eea', '#f093fb', '#4facfe', '#43e97b'];
@@ -79,7 +80,9 @@ const elements = {
     notificationStatus: document.getElementById('notification-status'),
     settingsNotificationTime: document.getElementById('settings-notification-time'),
     testNotification: document.getElementById('test-notification'),
-    resetApp: document.getElementById('reset-app')
+    resetApp: document.getElementById('reset-app'),
+    toggleTheme: document.getElementById('toggle-theme'),
+    themeStatus: document.getElementById('theme-status')
 };
 
 // ==================== Utility Functions ====================
@@ -788,6 +791,32 @@ function initSettingsEvents() {
             window.location.href = window.location.pathname; // Remove query params
         }
     });
+
+    // Theme toggle
+    elements.toggleTheme.addEventListener('click', () => {
+        const isLight = document.body.classList.toggle('light-mode');
+        setLocal(LOCAL_KEYS.THEME, isLight ? 'light' : 'dark');
+        updateThemeUI();
+    });
+}
+
+// ==================== Theme Functions ====================
+function updateThemeUI() {
+    const isLight = document.body.classList.contains('light-mode');
+    elements.themeStatus.textContent = isLight ? 'Light mode' : 'Dark mode';
+    if (isLight) {
+        elements.toggleTheme.classList.add('active');
+    } else {
+        elements.toggleTheme.classList.remove('active');
+    }
+}
+
+function initTheme() {
+    const savedTheme = getLocal(LOCAL_KEYS.THEME, 'dark');
+    if (savedTheme === 'light') {
+        document.body.classList.add('light-mode');
+    }
+    updateThemeUI();
 }
 
 // ==================== Service Worker ====================
@@ -813,6 +842,7 @@ async function init() {
         initMainEvents();
         initHistoryEvents();
         initSettingsEvents();
+        initTheme();
         console.log('Events initialized');
 
         showScreen('loading');
