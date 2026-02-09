@@ -2,6 +2,9 @@
 const SUPABASE_URL = 'https://oxkqndqytcypxjlbiigf.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_fZTg0VRo4Hmi850zJa-n-Q_bQOmekXU';
 
+// VAPID Key for Web Push (public key only - private key is in Supabase Edge Function)
+const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
+
 let supabaseClient;
 try {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -384,12 +387,16 @@ function renderIdentityPicker() {
 
     // Add click handlers
     elements.identityList.querySelectorAll('.identity-option').forEach(option => {
-        option.addEventListener('click', () => {
+        option.addEventListener('click', async () => {
             const index = parseInt(option.dataset.index);
             myIndex = index;
             myIdentity = currentHousehold.friends[index];
             setLocal(LOCAL_KEYS.MY_INDEX, myIndex);
             setLocal(LOCAL_KEYS.MY_IDENTITY, myIdentity);
+
+            // Subscribe to push notifications
+            await subscribeToPush();
+
             showScreen('main');
         });
     });
@@ -817,6 +824,72 @@ function initTheme() {
         document.body.classList.add('light-mode');
     }
     updateThemeUI();
+}
+
+// ==================== Push Notifications ====================
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+async function subscribeToPush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        console.log('Push notifications not supported');
+        return false;
+    }
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+
+        // Check if already subscribed
+        let subscription = await registration.pushManager.getSubscription();
+
+        if (!subscription) {
+            // Subscribe to push
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+        }
+
+        // Save subscription to Supabase
+        if (currentHousehold && myIndex !== null) {
+            const subJson = subscription.toJSON();
+
+            const { error } = await supabaseClient
+                .from('push_subscriptions')
+                .upsert({
+                    household_id: currentHousehold.id,
+                    person_index: myIndex,
+                    endpoint: subJson.endpoint,
+                    p256dh: subJson.keys.p256dh,
+                    auth: subJson.keys.auth
+                }, {
+                    onConflict: 'household_id,person_index,endpoint'
+                });
+
+            if (error) {
+                console.error('Failed to save push subscription:', error);
+            } else {
+                console.log('Push subscription saved to Supabase');
+            }
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Failed to subscribe to push:', error);
+        return false;
+    }
 }
 
 // ==================== Service Worker ====================

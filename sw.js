@@ -1,13 +1,13 @@
 // Service Worker for Dish Duty PWA
-const CACHE_NAME = 'dish-duty-v1';
+const CACHE_NAME = 'dish-duty-v2';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
     '/style.css',
     '/app.js',
     '/manifest.json',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png'
+    '/icons/icon-192.svg',
+    '/icons/icon-512.svg'
 ];
 
 // Install event - cache assets
@@ -136,3 +136,37 @@ self.addEventListener('notificationclick', (event) => {
         );
     }
 });
+
+// Handle push events from server
+self.addEventListener('push', (event) => {
+    console.log('Push event received:', event);
+
+    let data = {
+        title: '🍽️ Dish Duty',
+        body: 'Someone finished the dishes!',
+        icon: '/icons/icon-192.svg'
+    };
+
+    if (event.data) {
+        try {
+            data = event.data.json();
+        } catch (e) {
+            data.body = event.data.text();
+        }
+    }
+
+    const options = {
+        body: data.body,
+        icon: data.icon || '/icons/icon-192.svg',
+        badge: '/icons/icon-192.svg',
+        tag: 'dish-duty-push',
+        requireInteraction: false,
+        vibrate: [200, 100, 200],
+        data: data
+    };
+
+    event.waitUntil(
+        self.registration.showNotification(data.title, options)
+    );
+});
+
