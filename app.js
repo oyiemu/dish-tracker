@@ -294,6 +294,19 @@ async function markComplete() {
         return false;
     }
 
+    // Trigger push notifications via Edge Function
+    // We don't await this because we don't want to block the UI
+    supabaseClient.functions.invoke('send-push', {
+        body: {
+            household_id: currentHousehold.id,
+            person_name: duty.name,
+            exclude_person_index: duty.index
+        }
+    }).then(({ data, error }) => {
+        if (error) console.error('Failed to send push:', error);
+        else console.log('Push sent:', data);
+    });
+
     return data;
 }
 
