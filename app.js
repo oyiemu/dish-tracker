@@ -3,7 +3,7 @@ const SUPABASE_URL = 'https://oxkqndqytcypxjlbiigf.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_fZTg0VRo4Hmi850zJa-n-Q_bQOmekXU';
 
 // VAPID Key for Web Push (public key only - private key is in Supabase Edge Function)
-const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
+const VAPID_PUBLIC_KEY = 'BNpgKg9wfuDbc34OdTPlQzDNlQ5ntKrQMIJ85tKIuPt1lFpg4LgNgpG6wJGRiukWirRBKZ1vv1UerQlHFSWoiUA';
 
 let supabaseClient;
 try {
