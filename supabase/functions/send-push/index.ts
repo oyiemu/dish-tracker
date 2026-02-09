@@ -3,25 +3,30 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import webPush from 'npm:web-push@3.6.7'
 
 // VAPID keys - the private key is stored as a secret
-const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
+const VAPID_PUBLIC_KEY = 'BNpgKg9wfuDbc34OdTPlQzDNlQ5ntKrQMIJ85tKIuPt1lFpg4LgNgpG6wJGRiukWirRBKZ1vv1UerQlHFSWoiUA';
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') || '';
 const VAPID_SUBJECT = 'mailto:admin@dishduty.app';
 
-// Web Push library for Deno
+// Set up VAPID details globally
+try {
+    if (VAPID_PRIVATE_KEY) {
+        webPush.setVapidDetails(
+            VAPID_SUBJECT,
+            VAPID_PUBLIC_KEY,
+            VAPID_PRIVATE_KEY
+        );
+        console.log('VAPID details set successfully');
+    } else {
+        console.error('VAPID_PRIVATE_KEY is missing!');
+    }
+} catch (err) {
+    console.error('Failed to set VAPID details:', err);
+}
+
 async function sendPushNotification(subscription: any, payload: any) {
-    const encoder = new TextEncoder();
-
-    // Import the web-push library
-    const webPush = await import('https://esm.sh/web-push@3.6.6');
-
-    webPush.setVapidDetails(
-        VAPID_SUBJECT,
-        VAPID_PUBLIC_KEY,
-        VAPID_PRIVATE_KEY
-    );
-
     try {
         await webPush.sendNotification(
             {
@@ -35,29 +40,36 @@ async function sendPushNotification(subscription: any, payload: any) {
         );
         return { success: true };
     } catch (error) {
-        console.error('Push failed:', error);
+        console.error('Push failed for sub:', subscription.endpoint.slice(0, 20), error);
         return { success: false, error: error.message };
     }
 }
 
+// CORS headers for all responses
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 serve(async (req) => {
-    // Handle CORS
+    // Handle CORS preflight
     if (req.method === 'OPTIONS') {
-        return new Response('ok', {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST',
-                'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-            },
-        });
+        return new Response('ok', { headers: corsHeaders });
     }
 
     try {
         const { household_id, person_name, exclude_person_index } = await req.json();
 
         // Create Supabase client
-        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        const supabaseUrl = Deno.env.get('SUPABASE_URL');
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+        if (!supabaseUrl || !supabaseKey) {
+            console.error('Missing Supabase environment variables', { supabaseUrl, supabaseKeyPresent: !!supabaseKey });
+            throw new Error('Server misconfiguration: Missing Supabase environment variables');
+        }
+
         const supabase = createClient(supabaseUrl, supabaseKey);
 
         // Get all push subscriptions for this household (except the person who completed)
@@ -74,7 +86,7 @@ serve(async (req) => {
         if (!subscriptions || subscriptions.length === 0) {
             return new Response(
                 JSON.stringify({ message: 'No subscriptions found' }),
-                { headers: { 'Content-Type': 'application/json' } }
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
@@ -94,12 +106,7 @@ serve(async (req) => {
                 message: `Sent ${results.filter(r => r.success).length} notifications`,
                 results
             }),
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                }
-            }
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
 
     } catch (error) {
@@ -107,10 +114,7 @@ serve(async (req) => {
             JSON.stringify({ error: error.message }),
             {
                 status: 400,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             }
         );
     }

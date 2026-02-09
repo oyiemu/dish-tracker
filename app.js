@@ -264,7 +264,7 @@ async function getTodaysCompletion() {
         .select('*')
         .eq('household_id', currentHousehold.id)
         .eq('completed_date', getTodayString())
-        .single();
+        .maybeSingle();
 
     if (error && error.code !== 'PGRST116') {
         console.error('Error checking completion:', error);
@@ -295,17 +295,32 @@ async function markComplete() {
     }
 
     // Trigger push notifications via Edge Function
-    // We don't await this because we don't want to block the UI
-    supabaseClient.functions.invoke('send-push', {
-        body: {
+    // Using explicit fetch with headers to ensure API key is included
+    fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'apikey': SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify({
             household_id: currentHousehold.id,
             person_name: duty.name,
             exclude_person_index: duty.index
-        }
-    }).then(({ data, error }) => {
-        if (error) console.error('Failed to send push:', error);
-        else console.log('Push sent:', data);
-    });
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Failed to send push:', data.error);
+                showToast('⚠️', 'Push Error', data.error);
+            } else {
+                console.log('Push sent:', data);
+            }
+        })
+        .catch(error => {
+            console.error('Push request failed:', error);
+        });
 
     return data;
 }
@@ -866,6 +881,23 @@ async function subscribeToPush() {
 
         // Check if already subscribed
         let subscription = await registration.pushManager.getSubscription();
+
+        // Check if subscription exists and key matches
+        if (subscription) {
+            const currentKey = subscription.options.applicationServerKey;
+            const expectedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+
+            // Simple comparison of key bytes
+            const isSameKey = currentKey &&
+                currentKey.byteLength === expectedKey.byteLength &&
+                new Uint8Array(currentKey).every((byte, i) => byte === expectedKey[i]);
+
+            if (!isSameKey) {
+                console.log('VAPID key changed, resubscribing...');
+                await subscription.unsubscribe();
+                subscription = null;
+            }
+        }
 
         if (!subscription) {
             // Subscribe to push

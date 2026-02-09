@@ -1,5 +1,5 @@
 // Service Worker for Dish Duty PWA
-const CACHE_NAME = 'dish-duty-v2';
+const CACHE_NAME = 'dish-duty-v4';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -39,6 +39,16 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
+    // Skip cross-origin requests, chrome extensions, etc.
+    if (!event.request.url.startsWith('http')) {
+        return;
+    }
+
+    // Skip Supabase API requests - let them go directly to network
+    if (event.request.url.includes('supabase.co')) {
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request)
             .then((response) => {
