@@ -82,7 +82,7 @@ const elements = {
     toggleNotifications: document.getElementById('toggle-notifications'),
     notificationStatus: document.getElementById('notification-status'),
     settingsNotificationTime: document.getElementById('settings-notification-time'),
-    testNotification: document.getElementById('test-notification'),
+
     resetApp: document.getElementById('reset-app'),
     toggleTheme: document.getElementById('toggle-theme'),
     themeStatus: document.getElementById('theme-status')
@@ -836,12 +836,7 @@ function initSettingsEvents() {
         setLocal(LOCAL_KEYS.NOTIFICATION_TIME, time);
     });
 
-    elements.testNotification.addEventListener('click', async () => {
-        if (Notification.permission !== 'granted') {
-            await requestNotificationPermission();
-        }
-        showTestNotification();
-    });
+
 
     elements.resetApp.addEventListener('click', () => {
         if (confirm('Are you sure you want to reset? You will need to re-select your identity.')) {
