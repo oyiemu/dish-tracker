@@ -1,11 +1,11 @@
 {
-    "name": "Dish Duty",
-    "short_name": "Dish Duty",
+    "name": "DishDuty",
+    "short_name": "DishDuty",
     "description": "Track whose turn it is to wash the dishes",
     "start_url": "/",
     "display": "standalone",
-    "background_color": "#0f0f1a",
-    "theme_color": "#667eea",
+    "background_color": "#0d0015",
+    "theme_color": "#8b5cf6",
     "orientation": "portrait",
     "icons": [
         {

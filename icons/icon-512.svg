@@ -1,13 +1,64 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#667eea"/>
-      <stop offset="100%" style="stop-color:#764ba2"/>
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#6d28d9"/>
     </linearGradient>
+    <linearGradient id="plate-shine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="white" stop-opacity="0.97"/>
+      <stop offset="100%" stop-color="#f0ecff" stop-opacity="0.92"/>
+    </linearGradient>
+    <linearGradient id="sparkle" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c4b5fd"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#4c1d95" flood-opacity="0.35"/>
+    </filter>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
-  <rect width="512" height="512" rx="80" fill="url(#bg)"/>
-  <circle cx="256" cy="256" r="140" fill="white" opacity="0.95"/>
-  <circle cx="256" cy="256" r="115" fill="none" stroke="#667eea" stroke-width="4" opacity="0.3"/>
-  <circle cx="256" cy="256" r="40" fill="#667eea" opacity="0.2"/>
-  <ellipse cx="215" cy="225" rx="40" ry="20" fill="white" opacity="0.4"/>
+  
+  <!-- Background -->
+  <rect width="512" height="512" rx="100" fill="url(#bg)"/>
+  
+  <!-- Subtle radial glow -->
+  <circle cx="256" cy="240" r="160" fill="white" opacity="0.05"/>
+  <circle cx="256" cy="240" r="100" fill="white" opacity="0.03"/>
+  
+  <!-- Plate -->
+  <g filter="url(#shadow)">
+    <ellipse cx="256" cy="262" rx="134" ry="128" fill="url(#plate-shine)"/>
+    <ellipse cx="256" cy="262" rx="108" ry="102" fill="none" stroke="#d4d0e8" stroke-width="1.5" opacity="0.4"/>
+    <ellipse cx="256" cy="262" rx="48" ry="43" fill="none" stroke="#d4d0e8" stroke-width="1" opacity="0.25"/>
+  </g>
+  
+  <!-- Plate highlight -->
+  <ellipse cx="218" cy="224" rx="48" ry="20" fill="white" opacity="0.3" transform="rotate(-12 218 224)"/>
+  
+  <!-- Checkmark -->
+  <g transform="translate(206, 230)" filter="url(#glow)">
+    <polyline points="14,44 38,68 86,16" fill="none" stroke="#8b5cf6" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  
+  <!-- Sparkles -->
+  <g fill="url(#sparkle)">
+    <!-- Top right sparkle (large) -->
+    <path d="M388,108 L394,92 L400,108 L416,114 L400,120 L394,136 L388,120 L372,114 Z" opacity="0.85"/>
+    <!-- Top left sparkle -->
+    <path d="M120,130 L124,120 L128,130 L138,134 L128,138 L124,148 L120,138 L110,134 Z" opacity="0.55"/>
+    <!-- Bottom right sparkle -->
+    <path d="M400,350 L404,340 L408,350 L418,354 L408,358 L404,368 L400,358 L390,354 Z" opacity="0.45"/>
+    <!-- Extra small sparkle -->
+    <path d="M140,350 L142,346 L144,350 L148,352 L144,354 L142,358 L140,354 L136,352 Z" opacity="0.35"/>
+  </g>
+  
+  <!-- Green dot indicator -->
+  <circle cx="405" cy="120" r="14" fill="#43e97b"/>
+  <circle cx="405" cy="120" r="7" fill="white" opacity="0.4"/>
 </svg>
