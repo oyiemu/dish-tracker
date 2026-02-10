@@ -29,6 +29,7 @@ const PERSON_COLORS = ['#8b5cf6', '#f093fb', '#4facfe', '#43e97b'];
 let currentHousehold = null;
 let myIdentity = null;
 let myIndex = null;
+let splashStartTime = null;
 let realtimeSubscription = null;
 
 // ==================== DOM Elements ====================
@@ -427,6 +428,8 @@ function showScreen(screenName) {
     switch (screenName) {
         case 'loading':
             elements.loadingScreen.classList.remove('hidden');
+            elements.loadingScreen.classList.remove('splash-fade-out');
+            splashStartTime = Date.now();
             break;
         case 'identity':
             elements.identityScreen.classList.remove('hidden');
@@ -1073,6 +1076,23 @@ async function init() {
         showScreen('loading');
         console.log('Loading screen shown');
 
+        // Helper: transition from splash to target screen with min display time
+        async function transitionFromSplash(targetScreen) {
+            const SPLASH_MIN_MS = 2500;
+            const elapsed = Date.now() - (splashStartTime || Date.now());
+            const remaining = Math.max(0, SPLASH_MIN_MS - elapsed);
+
+            if (remaining > 0) {
+                await new Promise(r => setTimeout(r, remaining));
+            }
+
+            // Fade out splash
+            elements.loadingScreen.classList.add('splash-fade-out');
+            await new Promise(r => setTimeout(r, 500));
+
+            showScreen(targetScreen);
+        }
+
         // Check for household ID in URL or local storage
         let householdId = getHouseholdIdFromUrl() || getLocal(LOCAL_KEYS.HOUSEHOLD_ID);
         console.log('Household ID:', householdId);
@@ -1093,20 +1113,20 @@ async function init() {
                 console.log('Identity:', myIdentity, 'Index:', myIndex);
 
                 if (myIndex !== null && myIdentity) {
-                    showScreen('main');
+                    await transitionFromSplash('main');
                 } else {
-                    showScreen('identity');
+                    await transitionFromSplash('identity');
                 }
             } else {
                 // Invalid household ID - clear it and show setup
                 console.log('Invalid household ID, showing setup');
                 localStorage.removeItem(LOCAL_KEYS.HOUSEHOLD_ID);
-                showScreen('setup');
+                await transitionFromSplash('setup');
             }
         } else {
             // New user, show setup
             console.log('No household ID, showing setup');
-            showScreen('setup');
+            await transitionFromSplash('setup');
         }
     } catch (error) {
         console.error('Init error:', error);
