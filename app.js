@@ -451,16 +451,32 @@ async function updateMainScreen() {
     const completion = await getTodaysCompletion();
     const isDone = !!completion;
 
+    const isMyDuty = duty.index === myIndex;
+
     if (isDone) {
         elements.markDoneBtn.classList.add('completed');
+        elements.markDoneBtn.classList.remove('not-my-duty');
+        elements.markDoneBtn.disabled = true;
         elements.markDoneBtn.innerHTML = `
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                 <polyline points="20 6 9 17 4 12"/>
             </svg>
             <span>Completed by ${completion.person_name}!</span>
         `;
+    } else if (!isMyDuty) {
+        elements.markDoneBtn.classList.remove('completed');
+        elements.markDoneBtn.classList.add('not-my-duty');
+        elements.markDoneBtn.disabled = true;
+        elements.markDoneBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span>It's ${duty.name}'s turn today</span>
+        `;
     } else {
         elements.markDoneBtn.classList.remove('completed');
+        elements.markDoneBtn.classList.remove('not-my-duty');
+        elements.markDoneBtn.disabled = false;
         elements.markDoneBtn.innerHTML = `
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
                 <polyline points="20 6 9 17 4 12"/>
@@ -730,6 +746,13 @@ function initMainEvents() {
     elements.markDoneBtn.addEventListener('click', async () => {
         const completion = await getTodaysCompletion();
         if (completion) return; // Already done
+
+        // Only the person on duty can mark as done
+        const duty = getTodaysDuty();
+        if (!duty || duty.index !== myIndex) {
+            showToast('⚠️', 'Not your turn', `It's ${duty?.name || 'someone else'}'s duty today`);
+            return;
+        }
 
         const result = await markComplete();
         if (result) {

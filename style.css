@@ -693,6 +693,24 @@ body {
 .btn-done.completed {
     background: var(--success);
     color: var(--bg-primary);
+    cursor: default;
+}
+
+.btn-done.not-my-duty {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--text-muted);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.btn-done.not-my-duty:hover {
+    transform: none;
+    background: var(--bg-card);
+}
+
+.btn-done:disabled {
+    cursor: not-allowed;
 }
 
 /* Schedule Section */
