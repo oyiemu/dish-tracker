@@ -100,10 +100,12 @@
             </div>
         </div>
 
-        <!-- Main Screen -->
         <div id="main-screen" class="screen hidden">
             <header class="main-header">
-                <h1 class="app-title">🍽️ Dish Duty</h1>
+                <h1 class="app-title">
+                    <span class="app-title-dot"></span>
+                    DishDuty
+                </h1>
                 <button id="settings-btn" class="icon-btn" aria-label="Settings">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="3" />
@@ -114,24 +116,43 @@
             </header>
 
             <div class="today-section">
-                <div class="today-label">Today's Duty</div>
                 <div class="today-card" id="today-card">
+                    <div class="today-card-header">
+                        <div class="today-card-date">
+                            <div class="today-card-date-label">TODAY</div>
+                            <div class="today-card-date-value" id="today-date-display"></div>
+                        </div>
+                        <div class="streak-badge hidden" id="streak-badge">
+                            <span class="streak-fire">🔥</span>
+                            <span id="streak-count">0</span> Day Streak
+                        </div>
+                    </div>
+                    <div class="today-avatar" id="today-avatar"></div>
                     <div class="today-person" id="today-person">Loading...</div>
-                    <div class="today-date" id="today-date"></div>
-                    <div class="your-turn-badge hidden" id="your-turn-badge">That's you! 🎯</div>
+                    <div class="today-subtitle" id="today-subtitle"></div>
+                    <!-- Hidden elements kept for JS compatibility -->
+                    <div class="today-date hidden" id="today-date"></div>
+                    <div class="your-turn-badge hidden" id="your-turn-badge"></div>
+                    <button id="mark-done-btn" class="btn-done">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="3">
+                            <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <span>Mark as Done</span>
+                    </button>
                 </div>
-                <button id="mark-done-btn" class="btn-done">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                        <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    <span>Mark as Done</span>
-                </button>
             </div>
 
             <div class="schedule-section">
-                <h2 class="section-title">Coming Up</h2>
+                <h2 class="section-title">
+                    <span class="section-title-icon">📅</span>
+                    Coming Up
+                </h2>
                 <div class="schedule-list" id="schedule-list">
                     <!-- Populated by JS -->
+                </div>
+                <div class="view-full-schedule" id="view-full-schedule" style="display:none;">
+                    <a href="#" id="view-full-schedule-link">View Full Schedule</a>
                 </div>
             </div>
 
@@ -151,14 +172,14 @@
 
             <nav class="bottom-nav">
                 <button class="nav-btn active" data-view="home">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                         <polyline points="9 22 9 12 15 12 15 22" />
                     </svg>
                     <span>Today</span>
                 </button>
                 <button class="nav-btn" data-view="history">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10" />
                         <polyline points="12 6 12 12 16 14" />
                     </svg>

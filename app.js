@@ -24,7 +24,7 @@ const LOCAL_KEYS = {
     THEME: 'dishDuty_theme'
 };
 
-const PERSON_COLORS = ['#667eea', '#f093fb', '#4facfe', '#43e97b'];
+const PERSON_COLORS = ['#8b5cf6', '#f093fb', '#4facfe', '#43e97b'];
 
 let currentHousehold = null;
 let myIdentity = null;
@@ -63,6 +63,11 @@ const elements = {
     todayCard: document.getElementById('today-card'),
     todayPerson: document.getElementById('today-person'),
     todayDate: document.getElementById('today-date'),
+    todayDateDisplay: document.getElementById('today-date-display'),
+    todayAvatar: document.getElementById('today-avatar'),
+    todaySubtitle: document.getElementById('today-subtitle'),
+    streakBadge: document.getElementById('streak-badge'),
+    streakCount: document.getElementById('streak-count'),
     yourTurnBadge: document.getElementById('your-turn-badge'),
     markDoneBtn: document.getElementById('mark-done-btn'),
     scheduleList: document.getElementById('schedule-list'),
@@ -273,6 +278,47 @@ async function getTodaysCompletion() {
     return data;
 }
 
+async function calculateStreak() {
+    if (!currentHousehold) return 0;
+
+    const { data, error } = await supabaseClient
+        .from('completions')
+        .select('completed_date')
+        .eq('household_id', currentHousehold.id)
+        .order('completed_date', { ascending: false })
+        .limit(60);
+
+    if (error || !data || data.length === 0) return 0;
+
+    // Get unique dates sorted descending
+    const uniqueDates = [...new Set(data.map(d => d.completed_date))].sort().reverse();
+
+    const today = getTodayString();
+    let streak = 0;
+    let checkDate = new Date(today + 'T00:00:00');
+
+    // If today isn't completed yet, start checking from yesterday
+    if (uniqueDates[0] !== today) {
+        checkDate.setDate(checkDate.getDate() - 1);
+    }
+
+    for (const dateStr of uniqueDates) {
+        const year = checkDate.getFullYear();
+        const month = String(checkDate.getMonth() + 1).padStart(2, '0');
+        const day = String(checkDate.getDate()).padStart(2, '0');
+        const expectedDate = `${year}-${month}-${day}`;
+
+        if (dateStr === expectedDate) {
+            streak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+        } else if (dateStr < expectedDate) {
+            break;
+        }
+    }
+
+    return streak;
+}
+
 async function markComplete() {
     if (!currentHousehold) return false;
 
@@ -431,6 +477,21 @@ function renderIdentityPicker() {
 }
 
 // ==================== UI: Main Screen ====================
+function formatCardDate(date) {
+    return new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        weekday: 'short'
+    }).format(date);
+}
+
+function getRelativeDay(date) {
+    const today = getToday();
+    const diff = getDaysDiff(today, date);
+    if (diff === 1) return 'Tomorrow';
+    return new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(date);
+}
+
 async function updateMainScreen() {
     const duty = getTodaysDuty();
     if (!duty) return;
@@ -440,18 +501,33 @@ async function updateMainScreen() {
     elements.todayDate.textContent = formatDate(new Date());
     elements.todayCard.style.setProperty('--person-color', duty.color);
 
-    // Show "your turn" badge if it's the current user
-    if (duty.index === myIndex) {
-        elements.yourTurnBadge.classList.remove('hidden');
+    // Date display in card
+    elements.todayDateDisplay.textContent = formatCardDate(new Date());
+
+    // Avatar
+    elements.todayAvatar.textContent = duty.name.charAt(0).toUpperCase();
+    elements.todayAvatar.style.background = `linear-gradient(135deg, ${duty.color}, ${duty.color}88)`;
+
+    // Subtitle
+    const isMyDuty = duty.index === myIndex;
+    if (isMyDuty) {
+        elements.todaySubtitle.textContent = "It's your turn to shine ✨";
     } else {
-        elements.yourTurnBadge.classList.add('hidden');
+        elements.todaySubtitle.textContent = `It's ${duty.name}'s turn today`;
+    }
+
+    // Streak
+    const streak = await calculateStreak();
+    if (streak > 0) {
+        elements.streakBadge.classList.remove('hidden');
+        elements.streakCount.textContent = streak;
+    } else {
+        elements.streakBadge.classList.add('hidden');
     }
 
     // Check if today is completed
     const completion = await getTodaysCompletion();
     const isDone = !!completion;
-
-    const isMyDuty = duty.index === myIndex;
 
     if (isDone) {
         elements.markDoneBtn.classList.add('completed');
@@ -485,15 +561,28 @@ async function updateMainScreen() {
         `;
     }
 
-    // Update schedule
-    const schedule = getSchedule(5);
-    elements.scheduleList.innerHTML = schedule.map(item => `
-        <div class="schedule-item ${item.isYou ? 'is-you' : ''}" style="--person-color: ${item.color}">
-            <span class="schedule-day">${formatShortDate(item.date)}</span>
-            <span class="schedule-name">${item.name}</span>
-            ${item.isYou ? '<span class="schedule-you-tag">YOU</span>' : ''}
-        </div>
-    `).join('');
+    // Update schedule with new layout
+    const schedule = getSchedule(4);
+    elements.scheduleList.innerHTML = schedule.map(item => {
+        const dayAbbr = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(item.date).toUpperCase();
+        const dateNum = item.date.getDate();
+        const relativeDay = getRelativeDay(item.date);
+        const initial = item.name.charAt(0).toUpperCase();
+
+        return `
+            <div class="schedule-item ${item.isYou ? 'is-you' : ''}" style="--person-color: ${item.color}">
+                <div class="schedule-date-block">
+                    <span class="schedule-day-abbr">${dayAbbr}</span>
+                    <span class="schedule-date-num">${dateNum}</span>
+                </div>
+                <div class="schedule-info">
+                    <span class="schedule-name">${item.name}</span>
+                    <span class="schedule-relative">${relativeDay}</span>
+                </div>
+                <div class="schedule-avatar" style="background: linear-gradient(135deg, ${item.color}, ${item.color}88)">${initial}</div>
+            </div>
+        `;
+    }).join('');
 
     // Update settings identity display
     elements.currentIdentity.textContent = myIdentity || 'Not set';
