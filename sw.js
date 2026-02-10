@@ -1,5 +1,5 @@
 // Service Worker for Dish Duty PWA
-const CACHE_NAME = 'dish-duty-v9';
+const CACHE_NAME = 'dish-duty-v10';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',

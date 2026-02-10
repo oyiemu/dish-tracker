@@ -964,6 +964,145 @@ function initTheme() {
     updateThemeUI();
 }
 
+// ==================== Gamified Notifications ====================
+const MORNING_MESSAGES = [
+    { title: '👑 Rise and shine king!', body: "It's your dish duty day — let's get it done!" },
+    { title: '🍽️ Good morning!', body: 'The dishes have been waiting for you. Make us proud.' },
+    { title: '💪 Time to earn your keep!', body: "Today it's your turn. You've got this." },
+    { title: '☀️ Wakey wakey!', body: "It's dish day. The sooner you start, the sooner you're free." },
+    { title: '🎯 You\'re up today!', body: "Show the boys how it's done. Dish duty awaits." }
+];
+
+const EVENING_ROASTS = [
+    { title: '💅 Buttercup...', body: "Are you tired? What color dress do you wear?" },
+    { title: '🫠 Oi mate', body: "Get off your a** — the dishes aren't washing themselves" },
+    { title: '🦥 12 whole hours...', body: "Even a sloth would've finished by now. Come on {name}." },
+    { title: '👀 The boys are watching', body: "The dishes are judging. Get moving." },
+    { title: '👵 Your grandma called', body: "She would've finished these dishes AND made dinner by now." },
+    { title: '🤲 Need help?', body: "Are the dishes scaring you? Do you need someone to hold your hand?" },
+    { title: '🧙 Legend says...', body: "He's still staring at the dirty dishes... waiting for them to wash themselves" },
+    { title: '📱 Group chat update', body: "At this rate we're renaming it to 'Dirty Dish {name}'" },
+    { title: '👸 Plot twist', body: "The dishes aren't going to disappear, princess" },
+    { title: '🎭 Classic {name}', body: "Day's almost over and you've done... absolutely nothing." },
+    { title: '📰 Breaking news', body: "Local man discovers dishes don't clean themselves" },
+    { title: '😤 Final warning', body: "You're one unwashed plate away from being kicked out of the group" },
+    { title: '😭 The kitchen is crying', body: "Literally crying. Do something about it." },
+    { title: '🧽 Missing persons report', body: "The dish sponge filed one on you. Show up." },
+    { title: '🏋️ Fun fact', body: "Doing dishes burns calories. You clearly need this workout, {name}." }
+];
+
+let morningTimer = null;
+let eveningTimer = null;
+
+function getRandomMessage(messages, name) {
+    const msg = messages[Math.floor(Math.random() * messages.length)];
+    return {
+        title: msg.title.replace(/\{name\}/g, name),
+        body: msg.body.replace(/\{name\}/g, name)
+    };
+}
+
+function getMsUntilTime(hours, minutes) {
+    const now = new Date();
+    const target = new Date(now);
+    target.setHours(hours, minutes, 0, 0);
+
+    let diff = target.getTime() - now.getTime();
+    if (diff < 0) diff += 24 * 60 * 60 * 1000; // next day
+    return diff;
+}
+
+async function showLocalNotification(title, body, tag) {
+    if (Notification.permission !== 'granted') return;
+
+    try {
+        const reg = await navigator.serviceWorker.ready;
+        await reg.showNotification(title, {
+            body: body,
+            icon: '/icons/icon-192.svg',
+            badge: '/icons/icon-192.svg',
+            tag: tag,
+            requireInteraction: true,
+            vibrate: [200, 100, 200, 100, 200]
+        });
+    } catch (err) {
+        console.error('Local notification failed:', err);
+    }
+}
+
+async function fireMorningReminder() {
+    const today = getTodayString();
+    const key = `dishDuty_morningNoti_${today}`;
+    if (localStorage.getItem(key)) return; // Already sent today
+
+    const duty = getTodaysDuty();
+    if (!duty || duty.index !== myIndex) return; // Not my duty
+
+    const msg = getRandomMessage(MORNING_MESSAGES, duty.name);
+    await showLocalNotification(msg.title, msg.body, 'dish-duty-morning');
+    localStorage.setItem(key, 'sent');
+    console.log('Morning reminder sent');
+}
+
+async function fireEveningRoast() {
+    const today = getTodayString();
+    const key = `dishDuty_eveningNoti_${today}`;
+    if (localStorage.getItem(key)) return; // Already sent today
+
+    const duty = getTodaysDuty();
+    if (!duty || duty.index !== myIndex) return; // Not my duty
+
+    // Check if today's task is done
+    const completion = await getTodaysCompletion();
+    if (completion) return; // Already done, no roast needed
+
+    const msg = getRandomMessage(EVENING_ROASTS, duty.name);
+    await showLocalNotification(msg.title, msg.body, 'dish-duty-evening');
+    localStorage.setItem(key, 'sent');
+    console.log('Evening roast sent');
+}
+
+function scheduleGamifiedNotifications() {
+    // Clear existing timers
+    if (morningTimer) clearTimeout(morningTimer);
+    if (eveningTimer) clearTimeout(eveningTimer);
+
+    if (!currentHousehold || myIndex === null) return;
+
+    const duty = getTodaysDuty();
+    if (!duty || duty.index !== myIndex) return; // Only schedule for duty person
+
+    const now = new Date();
+    const currentHour = now.getHours();
+
+    // Morning reminder at 9:00 AM
+    if (currentHour < 9) {
+        const msUntil9am = getMsUntilTime(9, 0);
+        morningTimer = setTimeout(() => fireMorningReminder(), msUntil9am);
+        console.log(`Morning reminder scheduled in ${Math.round(msUntil9am / 60000)} minutes`);
+    } else if (currentHour >= 9) {
+        // If we just opened the app after 9 AM, fire immediately if not sent yet
+        fireMorningReminder();
+    }
+
+    // Evening roast at 9:00 PM (21:00)
+    if (currentHour < 21) {
+        const msUntil9pm = getMsUntilTime(21, 0);
+        eveningTimer = setTimeout(() => fireEveningRoast(), msUntil9pm);
+        console.log(`Evening roast scheduled in ${Math.round(msUntil9pm / 60000)} minutes`);
+    } else if (currentHour >= 21) {
+        // App opened after 9 PM, fire immediately if not sent yet
+        fireEveningRoast();
+    }
+}
+
+// Re-schedule when tab becomes visible again
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        scheduleGamifiedNotifications();
+    }
+});
+
 // ==================== Push Notifications ====================
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -1114,6 +1253,7 @@ async function init() {
 
                 if (myIndex !== null && myIdentity) {
                     await transitionFromSplash('main');
+                    scheduleGamifiedNotifications();
                 } else {
                     await transitionFromSplash('identity');
                 }
