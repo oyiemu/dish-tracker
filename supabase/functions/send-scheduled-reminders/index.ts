@@ -45,12 +45,13 @@ const EVENING_ROASTS = [
     { title: '🏋️ Fun fact', body: "Doing dishes burns calories. You clearly need this workout, {name}." }
 ];
 
-function getRandomMessage(messages: any[], name: string) {
+function getRandomMessage(messages: any[], name: string, type: string) {
     const msg = messages[Math.floor(Math.random() * messages.length)];
     return {
         title: msg.title.replace(/\{name\}/g, name),
         body: msg.body.replace(/\{name\}/g, name),
-        icon: '/icons/icon-192.svg'
+        icon: '/icons/icon-192.svg',
+        tag: `dish-duty-${type}`
     };
 }
 
@@ -166,7 +167,7 @@ serve(async (req) => {
 
             // Pick a message
             const messages = type === 'morning' ? MORNING_MESSAGES : EVENING_ROASTS;
-            const payload = getRandomMessage(messages, dutyName);
+            const payload = getRandomMessage(messages, dutyName, type);
 
             // Send to all devices of the duty person
             const results = await Promise.all(

@@ -1,5 +1,5 @@
 // Service Worker for Dish Duty PWA
-const CACHE_NAME = 'dish-duty-v10';
+const CACHE_NAME = 'dish-duty-v11';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -169,9 +169,10 @@ self.addEventListener('push', (event) => {
         body: data.body,
         icon: data.icon || '/icons/icon-192.svg',
         badge: '/icons/icon-192.svg',
-        tag: 'dish-duty-push',
-        requireInteraction: false,
-        vibrate: [200, 100, 200],
+        tag: data.tag || 'dish-duty-push',
+        renotify: true,
+        requireInteraction: true,
+        vibrate: [200, 100, 200, 100, 200, 100, 200],
         data: data
     };
 
