@@ -91,7 +91,8 @@ const elements = {
 
     resetApp: document.getElementById('reset-app'),
     toggleTheme: document.getElementById('toggle-theme'),
-    themeStatus: document.getElementById('theme-status')
+    themeStatus: document.getElementById('theme-status'),
+    testPushBtn: document.getElementById('test-push-btn')
 };
 
 // ==================== Utility Functions ====================
@@ -928,7 +929,17 @@ function initSettingsEvents() {
         setLocal(LOCAL_KEYS.NOTIFICATION_TIME, time);
     });
 
-
+    // Test push notification button
+    if (elements.testPushBtn) {
+        elements.testPushBtn.addEventListener('click', () => {
+            elements.testPushBtn.disabled = true;
+            elements.testPushBtn.textContent = 'Sending...';
+            testPushNotification().finally(() => {
+                elements.testPushBtn.disabled = false;
+                elements.testPushBtn.textContent = 'Test';
+            });
+        });
+    }
 
     elements.resetApp.addEventListener('click', () => {
         if (confirm('Are you sure you want to reset? You will need to re-select your identity.')) {
@@ -1186,6 +1197,32 @@ async function subscribeToPush() {
     }
 }
 
+async function testPushNotification() {
+    try {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/send-scheduled-reminders`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'apikey': SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify({ type: 'test' })
+        });
+
+        const data = await response.json();
+        console.log('Test push response:', data);
+
+        if (data.error) {
+            showToast('⚠️', 'Push Test Failed', data.error);
+        } else {
+            showToast('🔔', 'Test Sent!', data.message || 'Check your notifications');
+        }
+    } catch (error) {
+        console.error('Test push failed:', error);
+        showToast('❌', 'Test Failed', error.message);
+    }
+}
+
 // ==================== Service Worker ====================
 async function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
@@ -1254,6 +1291,8 @@ async function init() {
                 if (myIndex !== null && myIdentity) {
                     await transitionFromSplash('main');
                     scheduleGamifiedNotifications();
+                    // Re-register push subscription on every load to prevent expiry
+                    subscribeToPush();
                 } else {
                     await transitionFromSplash('identity');
                 }

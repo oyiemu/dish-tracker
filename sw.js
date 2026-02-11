@@ -1,5 +1,5 @@
 // Service Worker for Dish Duty PWA
-const CACHE_NAME = 'dish-duty-v11';
+const CACHE_NAME = 'dish-duty-v13';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -149,35 +149,49 @@ self.addEventListener('notificationclick', (event) => {
 
 // Handle push events from server
 self.addEventListener('push', (event) => {
-    console.log('Push event received:', event);
+    console.log('[SW] Push event received', event);
 
-    let data = {
-        title: '🍽️ Dish Duty',
-        body: 'Someone finished the dishes!',
-        icon: '/icons/icon-192.svg'
-    };
-
-    if (event.data) {
-        try {
-            data = event.data.json();
-        } catch (e) {
-            data.body = event.data.text();
+    let data;
+    try {
+        if (event.data) {
+            try {
+                data = event.data.json();
+                console.log('[SW] Push data parsed:', data);
+            } catch (e) {
+                console.log('[SW] Push data is text:', event.data.text());
+                data = { title: 'Dish Duty', body: event.data.text() };
+            }
+        } else {
+            console.log('[SW] Push event has no data');
+            data = { title: 'Dish Duty', body: 'New notification' };
         }
+
+        const options = {
+            body: data.body || 'Open to see details',
+            icon: data.icon || '/icons/icon-192.svg',
+            badge: '/icons/icon-192.svg',
+            tag: data.tag || 'dish-duty-push',
+            renotify: true,
+            requireInteraction: true,
+            vibrate: [200, 100, 200, 100, 200, 100, 200],
+            data: data
+        };
+
+        const promise = self.registration.showNotification(data.title || 'Dish Duty', options)
+            .then(() => console.log('[SW] Notification shown successfully'))
+            .catch(err => console.error('[SW] Failed to show notification:', err));
+
+        event.waitUntil(promise);
+
+    } catch (err) {
+        console.error('[SW] Error in push handler:', err);
+        // Fallback
+        event.waitUntil(
+            self.registration.showNotification('Dish Duty Error', {
+                body: 'Notification received but failed to process',
+                icon: '/icons/icon-192.svg'
+            })
+        );
     }
-
-    const options = {
-        body: data.body,
-        icon: data.icon || '/icons/icon-192.svg',
-        badge: '/icons/icon-192.svg',
-        tag: data.tag || 'dish-duty-push',
-        renotify: true,
-        requireInteraction: true,
-        vibrate: [200, 100, 200, 100, 200, 100, 200],
-        data: data
-    };
-
-    event.waitUntil(
-        self.registration.showNotification(data.title, options)
-    );
 });
 

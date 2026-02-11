@@ -103,10 +103,10 @@ serve(async (req) => {
     }
 
     try {
-        const { type } = await req.json(); // "morning" or "evening"
+        const { type } = await req.json(); // "morning", "evening", or "test"
 
-        if (!type || !['morning', 'evening'].includes(type)) {
-            throw new Error('Invalid type. Must be "morning" or "evening".');
+        if (!type || !['morning', 'evening', 'test'].includes(type)) {
+            throw new Error('Invalid type. Must be "morning", "evening", or "test".');
         }
 
         const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -135,6 +135,29 @@ serve(async (req) => {
             if (!friends || friends.length === 0) continue;
 
             // Determine who's on duty today
+            if (type === 'test') {
+                // Send to EVERYONE in the household
+                const { data: allSubs } = await supabase
+                    .from('push_subscriptions')
+                    .select('*')
+                    .eq('household_id', householdId);
+
+                if (!allSubs?.length) continue;
+
+                const payload = {
+                    title: '🔔 Test Notification',
+                    body: 'If you see this, push is working!',
+                    icon: '/icons/icon-192.svg',
+                    tag: 'dish-duty-test'
+                };
+
+                const results = await Promise.all(allSubs.map((sub: any) => sendPush(sub, payload)));
+                const successful = results.filter((r: any) => r.success).length;
+                totalSent += successful;
+                console.log(`Household ${householdId}: Sent ${successful} test notifications`);
+                continue;
+            }
+
             const dutyIndex = getTodaysDutyIndex(start_date, start_index, friends.length);
             const dutyName = friends[dutyIndex];
 
